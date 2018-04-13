@@ -29,7 +29,9 @@ def generate_config(url, username, token, config_loc):
             hs_url=url,
             user_id=username,
             access_token=token,
-            admins=[]
+            admins=[],
+            # Commands can be case insensitive. !foo bar arg==!FOO BAR arg etc.
+            case_insensitive=False
     )
     save_config(config_loc, config)
     return config
