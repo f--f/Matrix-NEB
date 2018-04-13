@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import argparse
 
+from matrix_client.client import MatrixClient
 from matrix_client.api import MatrixHttpApi
 from neb.engine import Engine
 from neb.matrix import MatrixConfig
@@ -16,6 +17,7 @@ from plugins.prometheus import PrometheusPlugin
 import logging
 import logging.handlers
 import time
+import getpass
 
 log = logging.getLogger(name=__name__)
 
@@ -24,12 +26,12 @@ log = logging.getLogger(name=__name__)
 # - Add other plugins as tests of plugin architecture (e.g. anagrams, dictionary lookup, etc)
 
 
-def generate_config(url, username, token, config_loc):
+def generate_config(url, username, token, admins, config_loc):
     config = MatrixConfig(
             hs_url=url,
             user_id=username,
             access_token=token,
-            admins=[],
+            admins=admins,
             # Commands can be case insensitive. !foo bar arg==!FOO BAR arg etc.
             case_insensitive=False
     )
@@ -126,12 +128,16 @@ if __name__ == '__main__':
             print ("NEB works with an existing Matrix account. "
                 "Please set up an account for NEB if you haven't already.'")
             print "The config for this account will be saved to '%s'" % args.config
-            hsurl = raw_input("Home server URL (e.g. http://localhost:8008): ").strip()
+            hsurl = raw_input("Home server URL [https://matrix.org]: ").strip() or "https://matrix.org"
             if hsurl.endswith("/"):
                 hsurl = hsurl[:-1]
-            username = raw_input("Full user ID (e.g. @user:domain): ").strip()
-            token = raw_input("Access token: ").strip()
-            config = generate_config(hsurl, username, token, args.config)
+            username = raw_input("Bot user ID (e.g. @user:domain): ").strip()
+            password = getpass.getpass()
+            print "Retrieving access token... "
+            token = MatrixClient(hsurl).login_with_password(username, password)
+            print "Access token retrieved: ", token
+            admins = [raw_input("Administrator user ID (e.g. @user:domain): ").strip()]
+            config = generate_config(hsurl, username, token, admins, args.config)
     else:
         a.print_help()
         print "You probably want to run 'python neb.py -c neb.config'"
